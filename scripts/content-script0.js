@@ -3,7 +3,7 @@ const _ = {
     selectors:
     //['h1', 'h2', 'h3', 'h4', 'h5', 'a', 'span', 'p'],
     //['body *'],
-        ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'article', 'div'],
+        ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'article', 'div', 'span'],
     taglookUp: [],
     tagCnt: {},
     getElements: () => {
@@ -13,10 +13,8 @@ const _ = {
         //prepare a look up to preserve doublications from nested text
         elementsInReadOrder.forEach(function (tagEl_) {
             const tagEl = tagEl_.cloneNode(true);
-            const scripts = tagEl.querySelectorAll('script , style ');
+            const scripts = tagEl.querySelectorAll('script , style');
             [...scripts].forEach(item => item.remove());
-
-
 
             const text = tagEl.textContent.trim();
             const tagName = tagEl.tagName;
@@ -45,27 +43,17 @@ const _ = {
             const elsFromEl = item.tagEl.querySelectorAll(selectorsInReadOrder);
 
             [...elsFromEl].forEach(subEl => {
-
-
-
-                for (const child of subEl.childNodes) {
-    if (child.nodeType !== Node.TEXT_NODE) {
-
-        child.remove()
-    }
-
-
-    const subText = subEl.textContent.trim();;
-    console.log('---------< ',subEl,subText)
-    text = text.replace(subText, '');
-}
+                const subText = subEl.textContent.trim();
+                ;
+                console.log('---------< ', subEl, subText)
+                text = text.replace(subText, '');
             });
-console.log('---------> ',text)
+            console.log('---------> ', text)
             item.text = text;
         });
 
         _.taglookUp.forEach(tag => {
-            let text = tag.text.replace((/  |\r\n|\n|\r/gm), ' ');
+            let text = tag.text.replace((/  |\r\n|\n|\t|\r/gm), '');
 
             const limit = 10;
             const textPart = Math.min(Math.max(limit, text.length), text.length);
@@ -135,18 +123,36 @@ let fragments = Object.entries(_.taglookUp).map(([key, value], index) => {
     return line;
 });
 const len = Math.ceil(fragments.length / 3)
-const nA = fragments.slice(0,len);
+const nA = fragments.slice(0, len);
 const nB = fragments.slice(-len);
-const nN = nB.concat(nA);
+let nN = nB.concat(nA);
 let nText = '';
+let nN2 = nN.reduce((acc, el) => {
+    el.split(' ').forEach(el2 => {
+        if (el2.length <= 4) return;
+        if (!acc[el2]) {
 
-//console.log(len,fragments,nA,nB,nN)
+            acc[el2] = el2
+        }
+    });
+    return acc;
 
-while (nN.length && nText.length <= 2048) {
+
+}, {})
+
+nN = Object.keys(nN2).map((key, i) => {
+  return nN2[key]
+});
+
+//console.log(nN)
+
+
+
+while (nN.length && nText.length <= 1024) {
     const newLine = nN.pop();
     console.log('newLine', newLine);
 
-    nText += ' ' + newLine ;//+ ' \n';
+    nText += ' ' + newLine+ '\n ';
 }
 
 
@@ -167,16 +173,15 @@ console.log('fragments--->', fragments);
 
 fragments = nText;
 
-const basePromptPrefix =
-`create a poem in rhyming verse, a line always rhymes with the preceding line.
-The poem relates to the following content: ${fragments}`;
-console.log('**** POEM input****');
-console.log(basePromptPrefix)
+
+
 
 true && (async () => {
     try {
 
-
+      const basePromptPrefix = `write a poem, rhyming fallowing fragments :\n ${fragments}`;
+      console.log('**** POEM input****');
+      console.log(basePromptPrefix)
         const baseCompletion = await _.generate(basePromptPrefix);
         console.log('**** POEM ****');
         console.log(baseCompletion.text)
