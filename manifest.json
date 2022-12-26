@@ -20,6 +20,9 @@
       ],
       "js": [
         "scripts/content-script.js"
+      ],
+      "css": [
+        "css/content-script.css"
       ]
     }
   ],

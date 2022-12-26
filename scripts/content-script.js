@@ -17,7 +17,6 @@ const _ = {
             [...scripts].forEach(item => item.remove());
 
 
-
             const text = tagEl.textContent.trim();
             const tagName = tagEl.tagName;
 
@@ -47,20 +46,20 @@ const _ = {
             [...elsFromEl].forEach(subEl => {
 
 
-
                 for (const child of subEl.childNodes) {
-    if (child.nodeType !== Node.TEXT_NODE) {
+                    if (child.nodeType !== Node.TEXT_NODE) {
 
-        child.remove()
-    }
+                        child.remove()
+                    }
 
 
-    const subText = subEl.textContent.trim();;
-    console.log('---------< ',subEl,subText)
-    text = text.replace(subText, '');
-}
+                    const subText = subEl.textContent.trim();
+                    ;
+                    console.log('---------< ', subEl, subText)
+                    text = text.replace(subText, '');
+                }
             });
-console.log('---------> ',text)
+            console.log('---------> ', text)
             item.text = text;
         });
 
@@ -114,75 +113,90 @@ console.log('---------> ',text)
                 }
             });
         });
+    },
+    getPoem: async () => {
+
+        let fragments = Object.entries(_.taglookUp).map(([key, value], index) => {
+            //if (index <= 3) return '';
+            const tagType = value.tagEl.tagName;
+            //  console.log(_.tagCnt[tagType],'<--------',tagType)
+            const weight = _.tagCnt[tagType];
+            if (!value.text) {
+                return '';
+            }
+            let line = value.text + ' ';
+            //line += `  * ${weight};\n`;
+
+            //  console.log( '*****line:', line)
+            return line;
+        });
+        const len = Math.ceil(fragments.length / 3)
+        const nA = fragments.slice(0, len);
+        const nB = fragments.slice(-len);
+        const nN = nB.concat(nA);
+        let nText = '';
+
+        //console.log(len,fragments,nA,nB,nN)
+
+        while (nN.length && nText.length <= 2048) {
+            let newLine = nN.pop();
+
+            console.log('newLine', newLine);
+
+            nText += ' ' + newLine+ ' \n';
+        }
+
+        fragments = nText;
+
+        const basePromptPrefix =
+            `create a poem in rhyming verse, a line always rhymes with the preceding line.
+      The poem relates to the following content: ${fragments}`;
+        console.log('**** POEM input****');
+        console.log(basePromptPrefix)
+        let poem = '**fail**';
+
+        try {
+            const baseCompletion = await _.generate(basePromptPrefix);
+            console.log('**** POEM ****');
+            console.log(baseCompletion.text)
+            poem = baseCompletion.text;
+
+        } catch (error) {
+            console.log(error);
+        }
+
+        return poem;
+    },
+    addPoem: async () => {
+        _.buttonEl.classList.add('poem__button--wait');
+        let poem = await _.getPoem();
+poem = poem.replace((/  |\r\n|\n|\r/gm), '<br>');
+        console.log('+++++++++', poem)
+        _.buttonEl.classList.add('poem__button--over');
+
+      //  const textNode = document.insert(poem);
+_.pEl.insertAdjacentHTML('afterbegin', poem);
+  //_.pEl.appendChild(textNode);
+        _.pEl.classList.add('poem__text--ready');
+
     }
 };
 
 
 _.getElements();
+const divEl = document.createElement("div");
+_.buttonEl = document.createElement("button");
+_.pEl = document.createElement("p");
 
-let fragments = Object.entries(_.taglookUp).map(([key, value], index) => {
-    //if (index <= 3) return '';
-    const tagType = value.tagEl.tagName;
-    //  console.log(_.tagCnt[tagType],'<--------',tagType)
-    const weight = _.tagCnt[tagType];
-    if (!value.text) {
-        return '';
-    }
-    let line = value.text + ' ';
-//line += `  * ${weight};\n`;
+divEl.classList.add('poem');
+_.buttonEl.classList.add('poem__button');
+_.pEl.classList.add('poem__text');
 
-    //  console.log( '*****line:', line)
-    return line;
-});
-const len = Math.ceil(fragments.length / 3)
-const nA = fragments.slice(0,len);
-const nB = fragments.slice(-len);
-const nN = nB.concat(nA);
-let nText = '';
+_.buttonEl.innerHTML = "Poemize it! ";
+//pEl.innerHTML = 'Poem:<br>';
 
-//console.log(len,fragments,nA,nB,nN)
+_.buttonEl.addEventListener('click', _.addPoem)
+divEl.appendChild(_.buttonEl);
+divEl.appendChild(_.pEl);
 
-while (nN.length && nText.length <= 2048) {
-    const newLine = nN.pop();
-    console.log('newLine', newLine);
-
-    nText += ' ' + newLine ;//+ ' \n';
-}
-
-
-/*fragments = fragments.reduce((acc, newString) => {
-
-    acc += ' ' + newString;
-
-    return acc;
-}, '');*/
-
-
-/*
-const m = fragments.length / 2;
-fragments = fragments.slice(m - Math.min(1250, m), m);
-//encodeURIComponent(fragments);
-console.log('fragments--->', fragments);
-*/
-
-fragments = nText;
-
-const basePromptPrefix =
-`create a poem in rhyming verse, a line always rhymes with the preceding line.
-The poem relates to the following content: ${fragments}`;
-console.log('**** POEM input****');
-console.log(basePromptPrefix)
-
-true && (async () => {
-    try {
-
-
-        const baseCompletion = await _.generate(basePromptPrefix);
-        console.log('**** POEM ****');
-        console.log(baseCompletion.text)
-
-
-    } catch (error) {
-        console.log(error);
-    }
-})();
+document.body.appendChild(divEl);

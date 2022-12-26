@@ -5,3 +5,10 @@ body {
 #key_entered {
     display: none;
 }
+
+
+.poem{
+  position: fixed;
+  right:1em;
+  top:1em;
+}
